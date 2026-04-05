@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include <list>
 
-# define RPN_DEBUG 0
+# define RPN_STACK_LIST std::stack<int, std::list<int> >
 
 bool argsCheck(int argc, char **argv)
 {
@@ -36,7 +36,7 @@ bool isValidNumber(std::string &token)
 	return (true);
 }
 
-bool	manageOpe(std::string &token, std::stack<int, std::list<int> >&stack)
+bool	manageOpe(std::string &token, RPN_STACK_LIST &stack)
 {
 	if (stack.size() < 2)
 		return (false);
@@ -61,7 +61,7 @@ bool	manageOpe(std::string &token, std::stack<int, std::list<int> >&stack)
 	return (true);
 }
 
-void	addNumber(std::string &token, std::stack<int, std::list<int> >&stack)
+void	addNumber(std::string &token, RPN_STACK_LIST &stack)
 {
 	std::istringstream iss(token);
 	int val;
@@ -70,7 +70,7 @@ void	addNumber(std::string &token, std::stack<int, std::list<int> >&stack)
 	stack.push(val);
 }
 
-bool	manageToken(std::string &token, std::stack<int, std::list<int> >&stack)
+bool	manageToken(std::string &token, RPN_STACK_LIST &stack)
 {
 	if (isOperator(token))
 		return (manageOpe(token, stack));
@@ -81,7 +81,7 @@ bool	manageToken(std::string &token, std::stack<int, std::list<int> >&stack)
 	return (true);
 }
 
-void printStack(std::stack<int, std::list<int> >stack)
+void printStack(RPN_STACK_LIST stack)
 {
 	std::cout << " -- ";
 	while (stack.size())
@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 		std::cerr << "Error" << std::endl;
 		return (1);
 	}
-	std::stack<int, std::list<int> >stack;
+	RPN_STACK_LIST stack;
 	std::istringstream iss(argv[1]);
 	std::string token;
 	while (iss >> token)
@@ -109,8 +109,7 @@ int main(int argc, char **argv)
 			std::cerr << "Error" << std::endl;
 			return (1);
 		}
-		if (RPN_DEBUG)
-			printStack(stack);
+		//printStack(stack);
 	}
 	std::cout << stack.top() << std::endl;
 	return (0);
