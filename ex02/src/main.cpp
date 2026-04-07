@@ -10,11 +10,13 @@
 #define PMERGE_VEC std::vector<int>
 #define PMERGE_DQ std::deque<int>
 
+#pragma region UTILS
+
 long ft_getTime()
 {
 	struct timeval time;
 	gettimeofday(&time, NULL);
-	return (time.tv_sec * 1000 + time.tv_usec / 1000);
+	return (time.tv_sec * 1000 + time.tv_usec);
 }
 
 bool checkValues(int argc, char **argv)
@@ -34,19 +36,33 @@ bool checkValues(int argc, char **argv)
 	}
 	return (true);
 }
+#pragma endregion
 
-void	parseDq(int argc, char **argv, PMERGE_DQ &dq)
+#pragma region VECTOR ALGORITHM
+
+PMERGE_VEC buildJacobsthalVec(int n)
 {
-	int		i = 1;
-	int		val;
+	PMERGE_VEC result;
+	PMERGE_VEC jacob;
 
-	while (i < argc)
+	jacob.push_back(0);
+	jacob.push_back(1);
+	while (jacob.back() < n)
+		jacob.push_back(jacob[jacob.size()-1] + 2 * jacob[jacob.size()-2]);
+
+	for (size_t i = 1; i < jacob.size(); i++)
 	{
-		std::istringstream iss(argv[i]);
-		iss >> val;
-		dq.push_back(val);
-		i++;
+		int from = jacob[i];
+		int to = jacob[i-1];
+		for (int j = from; j > to && j <= n; j--)
+			result.push_back(j);
 	}
+
+	int last = jacob[jacob.size()-2];
+	while (last < n)
+		result.push_back(++last);
+
+	return (result);
 }
 
 void	parseVect(int argc, char **argv, PMERGE_VEC &vect)
@@ -62,6 +78,7 @@ void	parseVect(int argc, char **argv, PMERGE_VEC &vect)
 		i++;
 	}
 }
+
 void makePairsVect(PMERGE_VEC &vect, PMERGE_VEC &small, PMERGE_VEC &big)
 {
 	PMERGE_VEC::iterator it = vect.begin();
@@ -97,15 +114,20 @@ void makePairsVect(PMERGE_VEC &vect, PMERGE_VEC &small, PMERGE_VEC &big)
 
 void insertVect(PMERGE_VEC &small, PMERGE_VEC &mainChain)
 {
-	PMERGE_VEC::iterator small_it = small.begin();
-	PMERGE_VEC::iterator mc_it;
-	while (small_it != small.end())
+	PMERGE_VEC::iterator	it;
+	PMERGE_VEC				jacobsthal = buildJacobsthalVec(small.size());
+	int value;
+
+	for (size_t i = 0; i < small.size(); i++)
 	{
-		if (*small_it == -1)
-			return ;
-		mc_it = std::lower_bound(mainChain.begin(), mainChain.end(), *small_it);
-		mainChain.insert(mc_it, *small_it);
-		small_it++;
+		value = small[jacobsthal[i] - 1];
+		if (value == -1)
+		{
+			i++;
+			continue ;
+		}
+		it = std::lower_bound(mainChain.begin(), mainChain.end(), value);
+		mainChain.insert(it, value);
 	}
 }
 
@@ -137,6 +159,114 @@ long pmergeVect(int argc, char **argv)
 	return (ft_getTime());
 }
 
+#pragma endregion
+
+#pragma region DEQUE ALGORITHM
+
+PMERGE_DQ buildJacobsthalDq(int n)
+{
+	PMERGE_DQ result;
+	PMERGE_DQ jacob;
+
+	jacob.push_back(0);
+	jacob.push_back(1);
+	while (jacob.back() < n)
+		jacob.push_back(jacob[jacob.size()-1] + 2 * jacob[jacob.size()-2]);
+
+	for (size_t i = 1; i < jacob.size(); i++)
+	{
+		int from = jacob[i];
+		int to = jacob[i-1];
+		for (int j = from; j > to && j <= n; j--)
+			result.push_back(j);
+	}
+
+	int last = jacob[jacob.size()-2];
+	while (last < n)
+		result.push_back(++last);
+
+	return (result);
+}
+
+void	parseDq(int argc, char **argv, PMERGE_DQ &dq)
+{
+	int		i = 1;
+	int		val;
+
+	while (i < argc)
+	{
+		std::istringstream iss(argv[i]);
+		iss >> val;
+		dq.push_back(val);
+		i++;
+	}
+}
+
+void makePairsDq(PMERGE_DQ &dq, PMERGE_DQ &small, PMERGE_DQ &big)
+{
+	PMERGE_DQ::iterator it = dq.begin();
+	int a;
+	int b;
+
+	while (it != dq.end())
+	{
+		a = *it;
+		it++;
+		if (it != dq.end())
+		{
+			b = *it;
+			it++;
+		}
+		else
+		{
+			b = a;
+			a = -1;
+		}
+		if (a < b)
+		{
+			small.push_back(a);
+			big.push_back(b);
+		}
+		else
+		{
+			small.push_back(b);
+			big.push_back(a);	
+		}
+	}
+}
+
+void insertDq(PMERGE_DQ &small, PMERGE_DQ &mainChain)
+{
+	PMERGE_DQ::iterator	it;
+	PMERGE_DQ				jacobsthal = buildJacobsthalDq(small.size());
+	int value;
+
+	for (size_t i = 0; i < small.size(); i++)
+	{
+		value = small[jacobsthal[i] - 1];
+		if (value == -1)
+		{
+			i++;
+			continue ;
+		}
+		it = std::lower_bound(mainChain.begin(), mainChain.end(), value);
+		mainChain.insert(it, value);
+	}
+}
+
+PMERGE_DQ recDq(PMERGE_DQ toSort)
+{
+	PMERGE_DQ mainChain;
+	PMERGE_DQ small;
+	PMERGE_DQ big;
+	if (toSort.size() <= 1)
+		return (toSort);
+	makePairsDq(toSort, small, big);
+	mainChain = recDq(big);
+	insertDq(small, mainChain);
+	return (mainChain);
+}
+
 long pmergeDq(int argc, char **argv)
 {
 	PMERGE_DQ dq;
@@ -153,6 +283,8 @@ long pmergeDq(int argc, char **argv)
 	return (ft_getTime());
 }
 
+#pragma endregion
+
 int main(int argc, char **argv)
 {
 	if (argc == 1 || !checkValues(argc, argv))
@@ -168,9 +300,9 @@ int main(int argc, char **argv)
 
 	long vec_start = ft_getTime();
 	long vec_end = pmergeVect(argc, argv);
-	// long dq_start = ft_getTime();
-	// long dq_end = pmergeDq(argc, argv);
+	long dq_start = ft_getTime();
+	long dq_end = pmergeDq(argc, argv);
 	
-	std::cout << "Time to process with std::vector : " << vec_end - vec_start << "ms" << std::endl;
-	// std::cout << "Time to process with std::deque : " << dq_end - dq_start << "ms" << std::endl;
+	std::cout << "Time to process with std::vector : " << vec_end - vec_start << "us" << std::endl;
+	std::cout << "Time to process with std::deque : " << dq_end - dq_start << "us" << std::endl;
 }
